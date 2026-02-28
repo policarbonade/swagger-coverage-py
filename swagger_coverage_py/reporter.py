@@ -72,28 +72,24 @@ class CoverageReporter:
             )
 
     def generate_report(self):
-        inner_location = "swagger-coverage-commandline/bin/swagger-coverage-commandline"
-        
-        cmd_path = os.path.join(os.path.dirname(__file__), inner_location)
-        assert Path(
-            cmd_path
-        ).exists(), (
-            f"No commandline tools is found in following locations:\n{cmd_path}\n"
-        )
-        command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+        base_dir = os.path.join(os.path.dirname(__file__), "swagger-coverage-commandline")
+        lib_path = os.path.join(base_dir, "lib", "*")
+
+        classpath = lib_path.replace("/", os.sep)
+        command = [
+            "java",
+            "-cp", classpath,
+            "com.github.viclovsky.swagger.coverage.CommandLine",
+            "-s", self.swagger_doc_file,
+            "-i", self.output_dir,
+        ]
         if self.swagger_coverage_config:
             command.extend(["-c", self.swagger_coverage_config])
 
-        # Adjust the file paths for Windows
-        if platform.system() == "Windows":
-            command = [arg.replace("/", "\\") for arg in command]
-        
-        # Suppress all output if not in debug mode
         if not DEBUG_MODE:
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(command, stdout=devnull, stderr=devnull)
+            subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         else:
-            subprocess.run(command)
+            subprocess.run(command, check=True)
 
 
     def cleanup_input_files(self):

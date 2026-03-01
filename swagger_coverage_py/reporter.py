@@ -72,22 +72,45 @@ class CoverageReporter:
             )
 
     def generate_report(self):
-        base_dir = os.path.join(os.path.dirname(__file__), "swagger-coverage-commandline")
-        lib_path = os.path.join(base_dir, "lib", "*")
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
-        classpath = lib_path.replace("/", os.sep)
-        command = [
-            "java",
-            "-cp", classpath,
-            "com.github.viclovsky.swagger.coverage.CommandLine",
-            "-s", self.swagger_doc_file,
-            "-i", self.output_dir,
-        ]
+        inner_location = os.path.join(
+            "swagger-coverage-commandline",
+            "bin",
+            "swagger-coverage-commandline.bat"
+            if platform.system() == "Windows"
+            else "swagger-coverage-commandline",
+        )
+        cmd_path = os.path.join(os.path.dirname(__file__), inner_location)
+        assert Path(cmd_path).exists(), (
+            f"No commandline tools is found in following locations:\n{cmd_path}\n"
+        )
+
+        command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
         if self.swagger_coverage_config:
             command.extend(["-c", self.swagger_coverage_config])
 
+        if platform.system() == "Windows":
+            command = [arg.replace("/", "\\") for arg in command]
+            command = ["cmd", "/c", *command]
+
         if not DEBUG_MODE:
-            subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            try:
+                subprocess.run(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(
+                    "swagger-coverage CommandLine failed. "
+                    f"Command: {e.cmd}\n"
+                    f"Exit code: {e.returncode}\n"
+                    f"STDOUT:\n{e.stdout}\n"
+                    f"STDERR:\n{e.stderr}"
+                ) from e
         else:
             subprocess.run(command, check=True)
 

@@ -74,12 +74,11 @@ class CoverageReporter:
     def generate_report(self):
         base_dir = os.path.join(os.path.dirname(__file__), "swagger-coverage-commandline")
         lib_path = os.path.join(base_dir, "lib", "*")
-        cli_jar = "/Users/polinad/PycharmProjects/swagger-coverage-py/swagger_coverage_py/swagger-coverage-commandline/lib/swagger-coverage-commandline-1.0-SNAPSHOT.jar"
 
         classpath = lib_path.replace("/", os.sep)
         command = [
             "java",
-            "-cp", cli_jar,
+            "-cp", classpath,
             "com.github.viclovsky.swagger.coverage.CommandLine",
             "-s", self.swagger_doc_file,
             "-i", self.output_dir,
